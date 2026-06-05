@@ -4,9 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "libsql"
-  url       = env("TURSO_DATABASE_URL")
-  authToken = env("TURSO_AUTH_TOKEN")
+  provider = "sqlite"
+  url      = "file:./prisma/dev.db"
 }
 
 model User {

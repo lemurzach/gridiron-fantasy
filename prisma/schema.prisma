@@ -1,0 +1,385 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  displayName String
+  email       String   @unique
+  password    String
+  avatar      String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leagueMembers  LeagueMember[]
+  chatMessages   ChatMessage[]
+  chatReactions  ChatReaction[]
+  notifications  Notification[]
+  sentTrades     Trade[]        @relation("TradeSender")
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model League {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  sport       String   @default("football")
+  season      Int
+  status      String   @default("pre_draft")
+  avatarUrl   String?
+  isPublic    Boolean  @default(false)
+  inviteCode  String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rosterQB    Int @default(1)
+  rosterRB    Int @default(2)
+  rosterWR    Int @default(2)
+  rosterTE    Int @default(1)
+  rosterFLEX  Int @default(1)
+  rosterK     Int @default(1)
+  rosterBench Int @default(6)
+  rosterIR    Int @default(1)
+  maxRosters  Int @default(10)
+
+  scoringPassYds   Float @default(0.04)
+  scoringPassTD    Float @default(4)
+  scoringPassInt   Float @default(-2)
+  scoringRushYds   Float @default(0.1)
+  scoringRushTD    Float @default(6)
+  scoringRecYds    Float @default(0.1)
+  scoringRecTD     Float @default(6)
+  scoringReception Float @default(1)
+  scoringFumble    Float @default(-2)
+  scoring2pt       Float @default(2)
+
+  waiverType     String @default("rolling")
+  waiverBudget   Int    @default(100)
+  waiverDays     Int    @default(2)
+  waiverDeadline String @default("tuesday")
+
+  tradeDeadlineWeek  Int    @default(12)
+  tradeReviewDays    Int    @default(1)
+  tradeVeto          String @default("commissioner")
+
+  playoffStartWeek   Int @default(14)
+  playoffTeams       Int @default(4)
+  regularSeasonWeeks Int @default(13)
+  currentWeek        Int @default(1)
+
+  members      LeagueMember[]
+  players      Player[]
+  schedules    SeasonSchedule[]
+  drafts       Draft[]
+  transactions Transaction[]
+  trades       Trade[]
+  chatMessages ChatMessage[]
+  waiverClaims WaiverClaim[]
+}
+
+model LeagueMember {
+  id          String   @id @default(cuid())
+  leagueId    String
+  userId      String
+  teamName    String
+  role        String   @default("member")
+  waiverOrder Int      @default(0)
+  faabBudget  Int      @default(100)
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  ties        Int      @default(0)
+  pointsFor   Float    @default(0)
+  pointsAgainst Float  @default(0)
+  createdAt   DateTime @default(now())
+
+  league         League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id])
+  roster         RosterPlayer[]
+  matchupsHome   Matchup[]     @relation("HomeTeam")
+  matchupsAway   Matchup[]     @relation("AwayTeam")
+  draftPicks     DraftPick[]
+  tradeItemsFrom TradeItem[]   @relation("FromMember")
+  tradeItemsTo   TradeItem[]   @relation("ToMember")
+  waiverClaims   WaiverClaim[]
+  proposedTrades Trade[]       @relation("TradeProposer")
+  receivedTrades Trade[]       @relation("TradeReceiver")
+
+  @@unique([leagueId, userId])
+}
+
+model Player {
+  id           String   @id @default(cuid())
+  leagueId     String
+  firstName    String
+  lastName     String
+  position     String
+  jerseyNumber Int?
+  teamName     String?
+  status       String   @default("active")
+  injuryNote   String?
+  photoUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  league      League         @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  rosterSlots RosterPlayer[]
+  weekStats   WeekStats[]
+  draftPicks  DraftPick[]
+  tradeItems  TradeItem[]
+  waiverAdds  WaiverClaim[]  @relation("WaiverAdd")
+  waiverDrops WaiverClaim[]  @relation("WaiverDrop")
+}
+
+model RosterPlayer {
+  id             String  @id @default(cuid())
+  leagueMemberId String
+  playerId       String
+  slot           String  @default("bench")
+  isStarter      Boolean @default(false)
+
+  leagueMember LeagueMember @relation(fields: [leagueMemberId], references: [id], onDelete: Cascade)
+  player       Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueMemberId, playerId])
+}
+
+model SeasonSchedule {
+  id        String    @id @default(cuid())
+  leagueId  String
+  week      Int
+  status    String    @default("upcoming")
+  startDate DateTime?
+  endDate   DateTime?
+
+  league    League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  matchups  Matchup[]
+  weekStats WeekStats[]
+
+  @@unique([leagueId, week])
+}
+
+model Matchup {
+  id            String @id @default(cuid())
+  leagueId      String
+  scheduleId    String
+  homeTeamId    String
+  awayTeamId    String
+  homePoints    Float  @default(0)
+  awayPoints    Float  @default(0)
+  homeProjected Float  @default(0)
+  awayProjected Float  @default(0)
+  winnerId      String?
+  isPlayoff     Boolean @default(false)
+  playoffRound  Int?
+
+  schedule SeasonSchedule @relation(fields: [scheduleId], references: [id])
+  homeTeam LeagueMember   @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam LeagueMember   @relation("AwayTeam", fields: [awayTeamId], references: [id])
+}
+
+model WeekStats {
+  id         String @id @default(cuid())
+  playerId   String
+  scheduleId String
+  leagueId   String
+
+  passYds             Float @default(0)
+  passTDs             Float @default(0)
+  passInts            Float @default(0)
+  passAtts            Float @default(0)
+  passComps           Float @default(0)
+  rushYds             Float @default(0)
+  rushTDs             Float @default(0)
+  rushAtts            Float @default(0)
+  recYds              Float @default(0)
+  recTDs              Float @default(0)
+  receptions          Float @default(0)
+  targets             Float @default(0)
+  fumbles             Float @default(0)
+  twoPointConversions Float @default(0)
+  fantasyPoints       Float @default(0)
+
+  player   Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  schedule SeasonSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@unique([playerId, scheduleId])
+}
+
+model Draft {
+  id          String    @id @default(cuid())
+  leagueId    String
+  type        String    @default("snake")
+  status      String    @default("pre_draft")
+  currentPick Int       @default(0)
+  totalPicks  Int       @default(0)
+  pickTimer   Int       @default(90)
+  draftOrder  String    @default("[]")
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  league League      @relation(fields: [leagueId], references: [id])
+  picks  DraftPick[]
+}
+
+model DraftPick {
+  id             String    @id @default(cuid())
+  draftId        String
+  leagueMemberId String
+  playerId       String?
+  round          Int
+  pickNumber     Int
+  pickedAt       DateTime?
+  isAutoPick     Boolean   @default(false)
+
+  draft        Draft        @relation(fields: [draftId], references: [id])
+  leagueMember LeagueMember @relation(fields: [leagueMemberId], references: [id])
+  player       Player?      @relation(fields: [playerId], references: [id])
+
+  @@unique([draftId, pickNumber])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  leagueId    String
+  type        String
+  description String
+  metadata    String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id])
+}
+
+model WaiverClaim {
+  id             String    @id @default(cuid())
+  leagueId       String
+  leagueMemberId String
+  addPlayerId    String
+  dropPlayerId   String?
+  bidAmount      Int       @default(0)
+  priority       Int       @default(0)
+  status         String    @default("pending")
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  league       League       @relation(fields: [leagueId], references: [id])
+  leagueMember LeagueMember @relation(fields: [leagueMemberId], references: [id])
+  addPlayer    Player       @relation("WaiverAdd", fields: [addPlayerId], references: [id])
+  dropPlayer   Player?      @relation("WaiverDrop", fields: [dropPlayerId], references: [id])
+}
+
+model Trade {
+  id           String    @id @default(cuid())
+  leagueId     String
+  proposerId   String
+  receiverId   String
+  proposedById String
+  status       String    @default("pending")
+  notes        String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  league     League       @relation(fields: [leagueId], references: [id])
+  proposer   LeagueMember @relation("TradeProposer", fields: [proposerId], references: [id])
+  receiver   LeagueMember @relation("TradeReceiver", fields: [receiverId], references: [id])
+  proposedBy User         @relation("TradeSender", fields: [proposedById], references: [id])
+  items      TradeItem[]
+}
+
+model TradeItem {
+  id           String  @id @default(cuid())
+  tradeId      String
+  fromMemberId String
+  toMemberId   String
+  playerId     String?
+
+  trade      Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  fromMember LeagueMember @relation("FromMember", fields: [fromMemberId], references: [id])
+  toMember   LeagueMember @relation("ToMember", fields: [toMemberId], references: [id])
+  player     Player?      @relation(fields: [playerId], references: [id])
+}
+
+model ChatMessage {
+  id        String    @id @default(cuid())
+  leagueId  String
+  userId    String
+  content   String
+  type      String    @default("text")
+  metadata  String    @default("{}")
+  isPinned  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  league    League         @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id])
+  reactions ChatReaction[]
+}
+
+model ChatReaction {
+  id        String @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  leagueId  String?
+  metadata  String   @default("{}")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

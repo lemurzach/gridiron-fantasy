@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0d0d14;
+  --color-surface: #161622;
+  --color-surface-2: #1e1e2e;
+  --color-border: #2a2a3e;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
+  --color-accent: #22c55e;
+  --color-foreground: #f1f1f5;
+  --color-muted: #8b8ba7;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+.pos-qb   { color: #f87171; }
+.pos-rb   { color: #4ade80; }
+.pos-wr   { color: #60a5fa; }
+.pos-te   { color: #fbbf24; }
+.pos-k    { color: #94a3b8; }
+.pos-def  { color: #c084fc; }
+.pos-flex { color: #fb923c; }
+
+.bg-pos-qb   { background: rgba(248,113,113,0.15); color: #fca5a5; }
+.bg-pos-rb   { background: rgba(74,222,128,0.15);  color: #86efac; }
+.bg-pos-wr   { background: rgba(96,165,250,0.15);  color: #93c5fd; }
+.bg-pos-te   { background: rgba(251,191,36,0.15);  color: #fde68a; }
+.bg-pos-k    { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+.bg-pos-def  { background: rgba(192,132,252,0.15); color: #e9d5ff; }
+.bg-pos-flex { background: rgba(251,146,60,0.15);  color: #fed7aa; }
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-in;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

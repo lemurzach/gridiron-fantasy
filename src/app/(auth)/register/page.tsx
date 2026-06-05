@@ -19,22 +19,27 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: form.email, username: form.username, displayName: form.displayName, password: form.password }),
-    });
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error || "Registration failed");
-      setLoading(false);
-      return;
-    }
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, username: form.username, displayName: form.displayName, password: form.password }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError((d as { error?: string }).error || "Registration failed");
+        setLoading(false);
+        return;
+      }
 
-    const login = await signIn("credentials", { email: form.email, password: form.password, redirect: false });
-    setLoading(false);
-    if (login?.error) { setError("Account created but login failed — try signing in manually"); return; }
-    router.push("/dashboard");
+      const login = await signIn("credentials", { email: form.email, password: form.password, redirect: false });
+      setLoading(false);
+      if (login?.error) { setError("Account created but login failed — try signing in manually"); return; }
+      router.push("/dashboard");
+    } catch {
+      setError("Network error — check your connection and try again");
+      setLoading(false);
+    }
   }
 
   return (
